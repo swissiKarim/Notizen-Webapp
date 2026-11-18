@@ -16,5 +16,6 @@ with urllib.request.urlopen(req) as resp:
 
 print(json.dumps({
     "status": status,
+    "headers": {},
     "body": body,
 }))

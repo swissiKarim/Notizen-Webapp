@@ -36,5 +36,6 @@ all_ok = all(s == 201 for s in statuses)
 
 print(json.dumps({
     "status": 201 if all_ok else 500,
-    "statuses": statuses,
+    "headers": {},
+    "body": {"all_ok": all_ok, "statuses": statuses},
 }))
