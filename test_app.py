@@ -140,6 +140,58 @@ def test_root_returns_html():
         server.shutdown()
 
 
+def test_health_returns_200():
+    """US-03/AC-1: GET /health returns HTTP 200."""
+    server, _ = _start_server(port=18110)
+    try:
+        conn = HTTPConnection("127.0.0.1", 18110)
+        conn.request("GET", "/health")
+        resp = conn.getresponse()
+        assert resp.status == 200
+        resp.read()
+    finally:
+        server.shutdown()
+
+
+def test_health_body_is_ready():
+    """US-03/AC-2: GET /health body is exactly 'ready'."""
+    server, _ = _start_server(port=18111)
+    try:
+        conn = HTTPConnection("127.0.0.1", 18111)
+        conn.request("GET", "/health")
+        resp = conn.getresponse()
+        assert resp.read() == b"ready"
+    finally:
+        server.shutdown()
+
+
+def test_health_concurrent():
+    """US-03/AC-3: GET /health stable under concurrent requests."""
+    server, _ = _start_server(port=18112)
+    statuses = []
+    lock = threading.Lock()
+
+    def fetch():
+        conn = HTTPConnection("127.0.0.1", 18112)
+        conn.request("GET", "/health")
+        r = conn.getresponse()
+        code = r.status
+        r.read()
+        with lock:
+            statuses.append(code)
+
+    try:
+        threads = [threading.Thread(target=fetch) for _ in range(10)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        assert all(s == 200 for s in statuses)
+        assert len(statuses) == 10
+    finally:
+        server.shutdown()
+
+
 def test_threading_http_server_class_exists():
     """ThreadingHTTPServer class is importable from app."""
     app = _fresh_state()
