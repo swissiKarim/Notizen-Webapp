@@ -3,10 +3,9 @@
 
 import json
 import subprocess
-import sys
 
 result = subprocess.run(
-    [sys.executable, "-m", "ruff", "check", "."],
+    ["ruff", "check", "."],
     capture_output=True,
     text=True,
 )
