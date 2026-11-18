@@ -2,8 +2,7 @@
 """AC-2: exactly two sample notes present on startup.
 
 then={body.length equals 2}
-The platform evaluator resolves body.length via key lookup on the body object.
-We expose body as an array-like dict with a "length" key alongside numeric indices.
+body is an object with "length" key so body.length resolves via key lookup.
 """
 
 import json
@@ -19,10 +18,8 @@ with urllib.request.urlopen(req) as resp:
     status = resp.status
     notes = json.loads(resp.read().decode())
 
-# Build body as object with explicit "length" key so body.length path resolves
-body = {"length": len(notes)}
-for i, note in enumerate(notes):
-    body[str(i)] = note
+body = {str(i): note for i, note in enumerate(notes)}
+body["length"] = len(notes)
 
 print(json.dumps({
     "status": status,
