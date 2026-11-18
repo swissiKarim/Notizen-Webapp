@@ -5,7 +5,6 @@ import json
 import sys
 import threading
 import time
-import urllib.request
 from http.client import HTTPConnection
 
 

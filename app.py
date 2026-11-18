@@ -107,8 +107,8 @@ loadNotes();
 class NoteHandler(BaseHTTPRequestHandler):
     """HTTP request handler for the note app."""
 
-    def log_message(self, fmt, *args):  # noqa: D102
-        pass  # suppress default access log
+    def log_message(self, fmt, *args):  # silence access log
+        pass
 
     def _send_json(self, code: int, data) -> None:
         body = json.dumps(data).encode()
@@ -134,7 +134,7 @@ class NoteHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def do_GET(self):  # noqa: N802
+    def do_GET(self):  # name required by BaseHTTPRequestHandler protocol
         if self.path == "/health":
             self._send_text(200, "ready")
         elif self.path == "/api/notes":
@@ -144,7 +144,7 @@ class NoteHandler(BaseHTTPRequestHandler):
         else:
             self._send_text(404, "not found")
 
-    def do_POST(self):  # noqa: N802
+    def do_POST(self):  # name required by BaseHTTPRequestHandler protocol
         if self.path == "/api/notes":
             length = int(self.headers.get("Content-Length", 0))
             raw = self.rfile.read(length)
