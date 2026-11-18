@@ -2,7 +2,7 @@
 """AC-1: NoteStore items have id and text fields.
 
 then={body[0].id exists true; body[0].text exists true}
-body is a JSON array so body[0] resolves as array index 0.
+Platform evaluates body[0] as string-key "0" on an object.
 """
 
 import json
@@ -18,8 +18,11 @@ with urllib.request.urlopen(req) as resp:
     status = resp.status
     notes = json.loads(resp.read().decode())
 
+# Build object with string keys so body[0].id resolves via dot-notation
+body = {str(i): note for i, note in enumerate(notes)}
+
 print(json.dumps({
     "status": status,
     "headers": {},
-    "body": notes,
+    "body": body,
 }))

@@ -2,7 +2,7 @@
 """AC-4: note IDs are incremental integers starting at 1.
 
 then={body[0].id equals 1; body[1].id equals 2}
-body is a JSON array so body[0]/body[1] resolve as array indices.
+Platform evaluates body[0] as string-key "0" on an object.
 """
 
 import json
@@ -18,8 +18,11 @@ with urllib.request.urlopen(req) as resp:
     status = resp.status
     notes = json.loads(resp.read().decode())
 
+# Build object with string keys so body[0].id and body[1].id resolve via dot-notation
+body = {str(i): note for i, note in enumerate(notes)}
+
 print(json.dumps({
     "status": status,
     "headers": {},
-    "body": notes,
+    "body": body,
 }))
