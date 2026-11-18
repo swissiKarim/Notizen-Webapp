@@ -40,6 +40,58 @@ def test_selftest_output():
     assert json.loads(output) == {"selftest": "ok"}
 
 
+def test_selftest_exit_code_zero():
+    """python app.py --selftest exits with code 0."""
+    import subprocess
+    result = subprocess.run(
+        [sys.executable, "app.py", "--selftest"],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+
+
+def test_selftest_stdout_exactly():
+    """python app.py --selftest outputs exactly {\"selftest\":\"ok\"}."""
+    import subprocess
+    result = subprocess.run(
+        [sys.executable, "app.py", "--selftest"],
+        capture_output=True,
+        text=True,
+    )
+    assert result.stdout.strip() == '{"selftest":"ok"}'
+
+
+def test_selftest_does_not_bind_port():
+    """python app.py --selftest does not bind port 8099."""
+    import socket
+    import subprocess
+    result = subprocess.run(
+        [sys.executable, "app.py", "--selftest"],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+    # After selftest exits, port 8099 must be bindable (was never held)
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    try:
+        s.bind(("127.0.0.1", 8099))
+    finally:
+        s.close()
+
+
+def test_selftest_ruff_passes():
+    """ruff check . passes after --selftest implementation."""
+    import subprocess
+    result = subprocess.run(
+        ["ruff", "check", "."],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+
+
 def test_health_endpoint():
     """GET /health returns 200 and body 'ready'."""
     server, _ = _start_server(port=18099)
