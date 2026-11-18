@@ -33,9 +33,8 @@ def _start_server(host="127.0.0.1", port=18099):
 # Tests
 # ---------------------------------------------------------------------------
 
-def test_selftest_output(capsys):
+def test_selftest_output():
     """--selftest prints exactly the right JSON line."""
-    app = _fresh_state()
     # Simulate selftest by calling the logic directly
     output = '{"selftest":"ok"}'
     assert json.loads(output) == {"selftest": "ok"}
