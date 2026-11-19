@@ -250,6 +250,78 @@ def test_threading_http_server_class_exists():
     assert hasattr(app, "ThreadingHTTPServer")
 
 
+def test_concurrent_writes_no_race_condition():
+    """20 concurrent POSTs all return 201 and IDs are unique (thread-safety)."""
+    server, _ = _start_server(port=18105)
+    try:
+        results = []
+        lock = threading.Lock()
+
+        def post(i):
+            payload = json.dumps({"text": f"concurrent {i}"}).encode()
+            conn = HTTPConnection("127.0.0.1", 18105)
+            conn.request(
+                "POST", "/api/notes", body=payload,
+                headers={"Content-Type": "application/json"},
+            )
+            resp = conn.getresponse()
+            note = json.loads(resp.read())
+            with lock:
+                results.append((resp.status, note.get("id")))
+
+        threads = [threading.Thread(target=post, args=(i,)) for i in range(20)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        statuses = [r[0] for r in results]
+        ids = [r[1] for r in results]
+        assert all(s == 201 for s in statuses), f"Not all 201: {statuses}"
+        assert len(set(ids)) == 20, f"Duplicate IDs detected: {ids}"
+    finally:
+        server.shutdown()
+
+
+def test_seed_notes_count_and_fields():
+    """Exactly two seed notes exist on startup, each with id and text fields."""
+    server, _ = _start_server(port=18106)
+    try:
+        conn = HTTPConnection("127.0.0.1", 18106)
+        conn.request("GET", "/api/notes")
+        resp = conn.getresponse()
+        notes = json.loads(resp.read())
+        assert len(notes) == 2, f"Expected 2 seed notes, got {len(notes)}"
+        for n in notes:
+            assert "id" in n and "text" in n
+    finally:
+        server.shutdown()
+
+
+def test_incremental_ids_start_at_1():
+    """Seed notes have IDs 1 and 2; new note gets ID 3."""
+    server, _ = _start_server(port=18107)
+    try:
+        conn = HTTPConnection("127.0.0.1", 18107)
+        conn.request("GET", "/api/notes")
+        resp = conn.getresponse()
+        notes = json.loads(resp.read())
+        assert notes[0]["id"] == 1
+        assert notes[1]["id"] == 2
+
+        payload = json.dumps({"text": "dritte Notiz"}).encode()
+        conn2 = HTTPConnection("127.0.0.1", 18107)
+        conn2.request(
+            "POST", "/api/notes", body=payload,
+            headers={"Content-Type": "application/json"},
+        )
+        resp2 = conn2.getresponse()
+        note = json.loads(resp2.read())
+        assert note["id"] == 3
+    finally:
+        server.shutdown()
+
+
 def test_stdlib_only():
     """app.py must not import any third-party packages."""
     import ast
