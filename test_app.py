@@ -383,6 +383,101 @@ def test_us05_ac4_at_least_two_notes_on_startup():
         server.shutdown()
 
 
+def test_us06_ac1_post_valid_returns_201():
+    """US-06/AC-1: POST /api/notes with valid text returns HTTP 201."""
+    server, _ = _start_server(port=18120)
+    try:
+        payload = json.dumps({"text": "US-06 Testnotiz"}).encode()
+        conn = HTTPConnection("127.0.0.1", 18120)
+        conn.request("POST", "/api/notes", body=payload,
+                     headers={"Content-Type": "application/json"})
+        resp = conn.getresponse()
+        assert resp.status == 201
+        resp.read()
+    finally:
+        server.shutdown()
+
+
+def test_us06_ac2_new_note_in_get():
+    """US-06/AC-2: Newly created note appears in GET /api/notes."""
+    server, _ = _start_server(port=18121)
+    try:
+        payload = json.dumps({"text": "Persistenz-Check"}).encode()
+        conn = HTTPConnection("127.0.0.1", 18121)
+        conn.request("POST", "/api/notes", body=payload,
+                     headers={"Content-Type": "application/json"})
+        conn.getresponse().read()
+
+        conn2 = HTTPConnection("127.0.0.1", 18121)
+        conn2.request("GET", "/api/notes")
+        resp = conn2.getresponse()
+        notes = json.loads(resp.read())
+        texts = [n["text"] for n in notes]
+        assert "Persistenz-Check" in texts
+    finally:
+        server.shutdown()
+
+
+def test_us06_ac3_empty_text_returns_400():
+    """US-06/AC-3: POST /api/notes with empty text returns HTTP 400."""
+    server, _ = _start_server(port=18122)
+    try:
+        payload = json.dumps({"text": ""}).encode()
+        conn = HTTPConnection("127.0.0.1", 18122)
+        conn.request("POST", "/api/notes", body=payload,
+                     headers={"Content-Type": "application/json"})
+        resp = conn.getresponse()
+        assert resp.status == 400
+        resp.read()
+    finally:
+        server.shutdown()
+
+
+def test_us06_ac4_text_too_long_returns_400():
+    """US-06/AC-4: POST /api/notes with text > 500 chars returns HTTP 400."""
+    server, _ = _start_server(port=18123)
+    try:
+        payload = json.dumps({"text": "x" * 501}).encode()
+        conn = HTTPConnection("127.0.0.1", 18123)
+        conn.request("POST", "/api/notes", body=payload,
+                     headers={"Content-Type": "application/json"})
+        resp = conn.getresponse()
+        assert resp.status == 400
+        resp.read()
+    finally:
+        server.shutdown()
+
+
+def test_us06_ac4_boundary_500_chars_returns_201():
+    """US-06/AC-4 boundary: POST /api/notes with exactly 500 chars returns HTTP 201."""
+    server, _ = _start_server(port=18124)
+    try:
+        payload = json.dumps({"text": "x" * 500}).encode()
+        conn = HTTPConnection("127.0.0.1", 18124)
+        conn.request("POST", "/api/notes", body=payload,
+                     headers={"Content-Type": "application/json"})
+        resp = conn.getresponse()
+        assert resp.status == 201
+        resp.read()
+    finally:
+        server.shutdown()
+
+
+def test_us06_ac5_missing_text_field_returns_400():
+    """US-06/AC-5: POST /api/notes with missing text field returns HTTP 400."""
+    server, _ = _start_server(port=18125)
+    try:
+        payload = json.dumps({"note": "no text field"}).encode()
+        conn = HTTPConnection("127.0.0.1", 18125)
+        conn.request("POST", "/api/notes", body=payload,
+                     headers={"Content-Type": "application/json"})
+        resp = conn.getresponse()
+        assert resp.status == 400
+        resp.read()
+    finally:
+        server.shutdown()
+
+
 def test_stdlib_only():
     """app.py must not import any third-party packages."""
     import ast
