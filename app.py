@@ -56,9 +56,9 @@ HTML = """<!DOCTYPE html>
 <h1>Notizen</h1>
 <ul id="note-list"></ul>
 <h2>Neue Notiz</h2>
-<input id="note-text" type="text" placeholder="Text eingeben …" style="width:60%">
+<input id="note-text" type="text" placeholder="Text eingeben …" style="width:60%" data-testid="note-input">
 <button id="add-btn">Hinzufügen</button>
-<p id="error" data-testid="error"></p>
+<p id="error" data-testid="error-message"></p>
 <script>
 async function loadNotes() {
   const res = await fetch('/api/notes');
