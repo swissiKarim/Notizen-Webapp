@@ -502,3 +502,89 @@ def test_stdlib_only():
             if node.module:
                 top = node.module.split(".")[0]
                 assert top in stdlib_modules, f"Non-stdlib import: {top}"
+
+
+# ---------------------------------------------------------------------------
+# US-07 tests
+# ---------------------------------------------------------------------------
+
+def test_us07_ac1_root_returns_html_200():
+    """US-07/AC-1: GET / returns HTTP 200 with text/html content-type."""
+    server, _ = _start_server(port=18130)
+    try:
+        conn = HTTPConnection("127.0.0.1", 18130)
+        conn.request("GET", "/")
+        resp = conn.getresponse()
+        assert resp.status == 200
+        ct = resp.headers.get("Content-Type", "")
+        assert "text/html" in ct, f"Expected text/html, got: {ct}"
+        body = resp.read().decode()
+        assert "<!DOCTYPE html>" in body or "<html" in body
+    finally:
+        server.shutdown()
+
+
+def test_us07_ac2_root_shows_seed_notes():
+    """US-07/AC-2: GET / HTML contains the two seed notes."""
+    server, _ = _start_server(port=18131)
+    try:
+        conn = HTTPConnection("127.0.0.1", 18131)
+        conn.request("GET", "/")
+        resp = conn.getresponse()
+        body = resp.read().decode()
+        assert "Versicherungsantrag" in body or "Notiz" in body
+    finally:
+        server.shutdown()
+
+
+def test_us07_ac3_root_contains_input_form():
+    """US-07/AC-3: GET / HTML contains an input form with data-testid=note-input."""
+    server, _ = _start_server(port=18132)
+    try:
+        conn = HTTPConnection("127.0.0.1", 18132)
+        conn.request("GET", "/")
+        resp = conn.getresponse()
+        body = resp.read().decode()
+        assert 'data-testid="note-input"' in body
+        assert "<input" in body
+    finally:
+        server.shutdown()
+
+
+def test_us07_ac5_error_element_has_testid():
+    """US-07/AC-5: GET / HTML contains error element with data-testid=error-message."""
+    server, _ = _start_server(port=18133)
+    try:
+        conn = HTTPConnection("127.0.0.1", 18133)
+        conn.request("GET", "/")
+        resp = conn.getresponse()
+        body = resp.read().decode()
+        assert 'data-testid="error-message"' in body
+    finally:
+        server.shutdown()
+
+
+def test_us07_ac6_no_standalone_html_files():
+    """US-07/AC-6: No standalone .html files exist in workspace."""
+    import pathlib
+    html_files = [
+        p for p in pathlib.Path(".").rglob("*.html")
+        if ".git" not in p.parts and "node_modules" not in p.parts
+    ]
+    assert html_files == [], f"Found standalone HTML files: {html_files}"
+
+
+def test_us07_ac6_html_as_python_string_literal():
+    """US-07/AC-6: app.py contains inline HTML as a Python string literal."""
+    import pathlib
+    source = pathlib.Path("app.py").read_text(encoding="utf-8")
+    assert "HTML = " in source, "No HTML variable found in app.py"
+    assert "<!DOCTYPE html>" in source, "No inline HTML DOCTYPE found in app.py"
+
+
+def test_us07_ac4_fetch_js_in_html():
+    """US-07/AC-4: The HTML in app.py uses fetch() for adding notes."""
+    import pathlib
+    source = pathlib.Path("app.py").read_text(encoding="utf-8")
+    assert "fetch(" in source, "No fetch() call found in inline HTML/JS"
+    assert "POST" in source, "No POST method found in fetch call"
