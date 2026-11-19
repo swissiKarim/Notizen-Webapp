@@ -322,6 +322,67 @@ def test_incremental_ids_start_at_1():
         server.shutdown()
 
 
+# ---------------------------------------------------------------------------
+# US-05: GET /api/notes – Notizliste abrufen
+# ---------------------------------------------------------------------------
+
+def test_us05_ac1_get_notes_returns_200():
+    """US-05/AC-1: GET /api/notes returns HTTP 200."""
+    server, _ = _start_server(port=18120)
+    try:
+        conn = HTTPConnection("127.0.0.1", 18120)
+        conn.request("GET", "/api/notes")
+        resp = conn.getresponse()
+        assert resp.status == 200
+        resp.read()
+    finally:
+        server.shutdown()
+
+
+def test_us05_ac2_get_notes_returns_json_array():
+    """US-05/AC-2: GET /api/notes response is a valid JSON array with application/json content-type."""
+    server, _ = _start_server(port=18121)
+    try:
+        conn = HTTPConnection("127.0.0.1", 18121)
+        conn.request("GET", "/api/notes")
+        resp = conn.getresponse()
+        content_type = resp.headers.get("Content-Type", "")
+        body = json.loads(resp.read())
+        assert "application/json" in content_type
+        assert isinstance(body, list)
+    finally:
+        server.shutdown()
+
+
+def test_us05_ac3_each_note_has_id_and_text():
+    """US-05/AC-3: each note in list contains id and text fields."""
+    server, _ = _start_server(port=18122)
+    try:
+        conn = HTTPConnection("127.0.0.1", 18122)
+        conn.request("GET", "/api/notes")
+        resp = conn.getresponse()
+        notes = json.loads(resp.read())
+        assert len(notes) >= 2
+        for note in notes:
+            assert "id" in note, f"Missing 'id' in note: {note}"
+            assert "text" in note, f"Missing 'text' in note: {note}"
+    finally:
+        server.shutdown()
+
+
+def test_us05_ac4_at_least_two_notes_on_startup():
+    """US-05/AC-4: at least two notes present on startup (seed notes)."""
+    server, _ = _start_server(port=18123)
+    try:
+        conn = HTTPConnection("127.0.0.1", 18123)
+        conn.request("GET", "/api/notes")
+        resp = conn.getresponse()
+        notes = json.loads(resp.read())
+        assert len(notes) >= 2, f"Expected at least 2 seed notes, got {len(notes)}"
+    finally:
+        server.shutdown()
+
+
 def test_stdlib_only():
     """app.py must not import any third-party packages."""
     import ast
