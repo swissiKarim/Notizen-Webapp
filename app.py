@@ -17,8 +17,8 @@ from socketserver import ThreadingMixIn
 
 _lock = threading.Lock()
 _notes: list[dict] = [
-    {"id": 1, "text": "Versicherungsantrag prüfen"},
-    {"id": 2, "text": "Schadensfall dokumentieren"},
+    {"id": 1, "text": "Notiz: Versicherungsantrag prüfen"},
+    {"id": 2, "text": "Notiz: Schadensfall dokumentieren"},
 ]
 _next_id: int = 3
 
